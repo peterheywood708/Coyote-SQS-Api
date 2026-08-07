@@ -33,31 +33,33 @@ app.get("/", (Request: Request, Response: Response) => {
   Response.send("Welcome to the SQS API");
 });
 
-app.post("/new", async (Request: Request, Response: Response) => {
-  const token: string = Request.header("authorization") || "";
+app.post("/new", async (request: Request, response: Response) => {
+  const token = request.header("authorization") || "";
+  if (!token) {
+    return response.status(401).send("No authorization token provided");
+  }
   const payload = await verifier.verify(token);
-  if (payload) {
-    if (Request.body?.key && Request.body?.jobId) {
-      const messageBody: IBody = {
-        key: Request.body?.key,
-        userId: payload?.username,
-        jobId: Request.body?.jobId,
-      };
-      const params = {
-        QueueUrl: process.env.AWS_QUEUE_URL || "",
-        MessageBody: JSON.stringify(messageBody),
-      };
-      try {
-        const data = await sqs.sendMessage(params).promise();
-        Response.send(data);
-      } catch (err) {
-        Response.status(400).send(err);
-      }
-    } else {
-      Response.status(400).send("Body must include key, userId and jobId");
-    }
-  } else {
-    Response.status(400).send("No authorisation token provided");
+  if (!payload?.username) {
+    return response.status(401).send("Invalid authorization token");
+  }
+  const { key, jobId } = request.body ?? {};
+  if (!key || !jobId) {
+    return response.status(400).send("Body must include key and jobId");
+  }
+  const messageBody: IBody = {
+    key,
+    userId: payload.username,
+    jobId,
+  };
+  const params = {
+    QueueUrl: process.env.AWS_QUEUE_URL || "",
+    MessageBody: JSON.stringify(messageBody),
+  };
+  try {
+    const data = await sqs.sendMessage(params).promise();
+    return response.status(200).send(data);
+  } catch (err) {
+    return response.status(500).send(err);
   }
 });
 
