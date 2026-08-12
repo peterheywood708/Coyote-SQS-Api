@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci --omit=dev \
+RUN npm ci \
     && npm install typescript -g \
     && npm cache clean --force
 

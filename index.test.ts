@@ -132,8 +132,8 @@ describe("index.ts route configuration and handlers", () => {
       (route) => route.method === "post" && route.path === "/new",
     );
     expect(route).toBeDefined();
-    verifyMock.mockResolvedValue({ username: "test-user" });
-    sendMessagePromiseMock.mockResolvedValue({ MessageId: "abc123" });
+    verifyMock.mockReturnValueOnce({ username: "test-user" });
+    sendMessagePromiseMock.mockReturnValueOnce({ MessageId: "abc123" });
     const status = jest.fn().mockReturnThis();
     const send = jest.fn();
     const req = {
@@ -142,7 +142,9 @@ describe("index.ts route configuration and handlers", () => {
     };
     await route!.handler(req, { status, send });
     expect(verifyMock).toHaveBeenCalledWith("token");
-    expect(sqsInstance.sendMessage).toHaveBeenCalledWith({
+    expect(
+      sqsInstance.sendMessage as unknown as jest.Mock,
+    ).toHaveBeenCalledWith({
       QueueUrl: "https://sqs.example.com/queue",
       MessageBody: JSON.stringify({
         key: "hello",
